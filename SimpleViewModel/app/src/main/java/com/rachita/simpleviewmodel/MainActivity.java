@@ -1,7 +1,10 @@
 package com.rachita.simpleviewmodel;
 
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -14,6 +17,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private TextView tv;
+    private TextView liveTv;
     MainActivityViewModel mainActivityViewModel;
 
     @Override
@@ -24,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         tv =findViewById(R.id.tv);
+        liveTv= findViewById(R.id.tv2);
 
         mainActivityViewModel= ViewModelProviders.of(this).get(MainActivityViewModel.class);
         tv.setText(Integer.toString(mainActivityViewModel.getCount()));
@@ -34,6 +39,14 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 mainActivityViewModel.setCount();
                 tv.setText(String.valueOf(mainActivityViewModel.getCount()));
+            }
+        });
+
+        LiveData<Integer> liveCount=  mainActivityViewModel.getLiveCount();
+        liveCount.observe(this, new Observer<Integer>() {
+            @Override
+            public void onChanged(@Nullable Integer integer) {
+                liveTv.setText(String.valueOf(integer));
             }
         });
     }

@@ -1,9 +1,10 @@
 package com.rachita.roomdemo;
 
+import android.content.Context;
 import android.content.Intent;
+import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -14,6 +15,7 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.rachita.roomdemo.app.App;
+import com.rachita.roomdemo.databinding.ActivityMainBinding;
 import com.rachita.roomdemo.db.ContactDb;
 import com.rachita.roomdemo.db.ContactEntity;
 
@@ -22,45 +24,55 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-
-public class ContactActivity extends AppCompatActivity  {
+public class ContactActivity extends AppCompatActivity {
 
     @Inject
     ContactDb contactDb;
 
-    @BindView(R.id.recycler_view)
     RecyclerView recyclerView;
     private ListAdapter listAdapter;
-    private  List<ContactEntity> contacts = new ArrayList<>();
+    private List<ContactEntity> contacts = new ArrayList<>();
+    private AddClickListener addClickListener;
+    //this class will be auto generated based on teh layout name
+    private ActivityMainBinding dataBinding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        ButterKnife.bind(this);
 
-        ((App)getApplication()).getComponent().inject(this);
+        //Dagger Injection
+        ((App) getApplication()).getComponent().inject(this);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        contacts= contactDb.getContactDao().selectAll();
-        listAdapter= new ListAdapter(contacts);
+        //instead of creating on click lister- pass custon listener to layout
+        addClickListener = new AddClickListener(this);
+
+        dataBinding= DataBindingUtil.setContentView(this,R.layout.activity_main);
+        dataBinding.setClickHandler(addClickListener);
+
+        //room query
+        contacts = contactDb.getContactDao().selectAll();
+
+        recyclerView= findViewById(R.id.recycler_view);
+        listAdapter = new ListAdapter(contacts);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(listAdapter);
 
-        FloatingActionButton fab = findViewById(R.id.fab);
+       /*
+       FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
              startActivity(new Intent(ContactActivity.this,AddContactActivity.class));
             }
-        });
+        });*/
+
 
         /*Delete on swipe left*/
-        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0,ItemTouchHelper.LEFT) {
+        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder viewHolder1) {
                 return false;
@@ -69,7 +81,7 @@ public class ContactActivity extends AppCompatActivity  {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
 
-                ContactEntity contactToDelete=contacts.get(viewHolder.getAdapterPosition());
+                ContactEntity contactToDelete = contacts.get(viewHolder.getAdapterPosition());
                 contactDb.getContactDao().delete(contactToDelete);
                 loadData();
 
@@ -79,10 +91,25 @@ public class ContactActivity extends AppCompatActivity  {
 
     }
 
-    private void loadData(){
+
+    private void loadData() {
         contacts.clear();
         contacts.addAll(contactDb.getContactDao().selectAll());
         listAdapter.notifyDataSetChanged();
+    }
+
+    public class AddClickListener {
+        Context context;
+
+        public AddClickListener(Context context) {
+            this.context = context;
+        }
+
+        public void OnClick(View view) {
+            startActivity(new Intent(context, AddContactActivity.class));
+        }
+
+
     }
 
     @Override

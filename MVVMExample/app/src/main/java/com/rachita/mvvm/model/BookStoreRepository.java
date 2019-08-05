@@ -37,7 +37,6 @@ public class BookStoreRepository {
                     .addCallback(callback)
                     .build();
 
-
         }
 
         return instance;
@@ -52,9 +51,12 @@ public class BookStoreRepository {
     };
 
 
-
+    /**
+     *
+     * @returns category list WITHOUT LIVE Data
+     */
     public   List<Category> getCategories() {
-         List<Category> categories=null;
+        List<Category> categories=null;
 
         ExecutorService es = Executors.newSingleThreadExecutor();
         Future< List<Category>> result = es.submit(new Callable< List<Category>>() {
@@ -67,14 +69,18 @@ public class BookStoreRepository {
             categories = result.get();
         } catch (Exception e) {
             // failed
+            e.printStackTrace();
         }
         return categories;
+    }
+
+    public LiveData<List<Category>> getAllCategories(){
+        return categoryDao.getCategories();
     }
 
     public LiveData<List<Book>> getBooks(int categoryId){
         return bookDao.getBooks(categoryId);
     }
-
 
     public void insert(final Book book) {
         Executor myExecutor = Executors.newSingleThreadExecutor();

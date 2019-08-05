@@ -2,12 +2,14 @@ package com.rachita.mvvm.view;
 
 import android.content.Context;
 import android.content.Intent;
+import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Toast;
 
 import com.rachita.mvvm.R;
+import com.rachita.mvvm.databinding.ActivityAddAndEditBinding;
 import com.rachita.mvvm.model.Book;
 
 
@@ -17,7 +19,7 @@ public class BookActivity extends AppCompatActivity {
     public static final String BOOK_ID = "bookId";
     public static final String BOOK_NAME = "bookName";
     public static final String UNIT_PRICE = "unitPrice";
-    // private ActivityAddAndEditBinding activityAddAndEditBinding;
+    private ActivityAddAndEditBinding activityAddAndEditBinding;
     private AddAndEditActivityClickHandlers addAndEditActivityClickHandlers;
 
 
@@ -26,13 +28,13 @@ public class BookActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_and_edit);
 
-          /*  book=new Book();
-            activityAddAndEditBinding= DataBindingUtil.setContentView(this,R.layout.activity_add_and_edit);
-            activityAddAndEditBinding.setBook(book);
+        book = new Book();
+        activityAddAndEditBinding = DataBindingUtil.setContentView(this, R.layout.activity_add_and_edit);
+        activityAddAndEditBinding.setBook(book);
 
-            addAndEditActivityClickHandlers = new AddAndEditActivityClickHandlers(this);
-            activityAddAndEditBinding.setClickHandler(addAndEditActivityClickHandlers);
-*/
+        addAndEditActivityClickHandlers = new AddAndEditActivityClickHandlers(this);
+        activityAddAndEditBinding.setClickHandler(addAndEditActivityClickHandlers);
+
         Intent intent = getIntent();
         if (intent.hasExtra(BOOK_ID)) {
 
@@ -44,7 +46,6 @@ public class BookActivity extends AppCompatActivity {
             setTitle("Add New Book");
 
         }
-
 
     }
 
@@ -65,7 +66,6 @@ public class BookActivity extends AppCompatActivity {
                 setResult(RESULT_OK, intent);
                 finish();
             }
-
 
         }
     }

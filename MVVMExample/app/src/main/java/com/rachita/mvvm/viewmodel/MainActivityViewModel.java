@@ -28,8 +28,26 @@ public class MainActivityViewModel extends AndroidViewModel {
       return   bookStoreRepository.getCategories();
     }
 
+    public LiveData<List<Category>> getAllCategories(){
+        return bookStoreRepository.getAllCategories();
+    }
+
+
     public LiveData<List<Book>> getBooks(int categoryId){
        return bookStoreRepository.getBooks(categoryId);
     }
+
+    public  void deleteBook(Book book){
+        bookStoreRepository.delete(book);
+    }
+
+    public void addBook(Book book){
+        bookStoreRepository.insert(book);
+    }
+
+    public void updateBook(Book book){
+        bookStoreRepository.update(book);
+    }
+
 
 }

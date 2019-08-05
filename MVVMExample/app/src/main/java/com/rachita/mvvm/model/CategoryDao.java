@@ -1,6 +1,7 @@
 package com.rachita.mvvm.model;
 
 
+import android.arch.lifecycle.LiveData;
 import android.arch.persistence.room.Dao;
 import android.arch.persistence.room.Delete;
 import android.arch.persistence.room.Insert;
@@ -26,6 +27,10 @@ public interface CategoryDao {
 
     @Query("select * from BOOK_CATEGORY_TABLE")
     List<Category> getAll();
+
+
+    @Query("select * from BOOK_CATEGORY_TABLE")
+    LiveData<List<Category>> getCategories();
 
 
 }

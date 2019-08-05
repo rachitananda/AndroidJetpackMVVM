@@ -6,11 +6,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,28 +22,25 @@ import android.widget.ArrayAdapter;
 import com.rachita.mvvm.R;
 import com.rachita.mvvm.databinding.ActivityMainBinding;
 import com.rachita.mvvm.model.Book;
-import com.rachita.mvvm.model.BookStoreRepository;
 import com.rachita.mvvm.model.Category;
-import com.rachita.mvvm.root.App;
 import com.rachita.mvvm.viewmodel.MainActivityViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Inject;
-
 public class MainActivity extends AppCompatActivity {
 
-    @Inject
-    BookStoreRepository bookStoreRepository;
 
-    private  ArrayAdapter<Category> categoryArrayAdapter;
+    private ArrayAdapter<Category> categoryArrayAdapter;
     private ActivityMainBinding activityMainBinding;
     private ClickHandler clickHandler;
+    private Category selectedCategory;
+    private int selectedBookId;
     private MainActivityViewModel mainActivityViewModel;
-    private List<Book>  books;
+      private List<Book>  books;
     private RecyclerView recyclerView;
     private BooksAdapter booksAdapter;
+    private ArrayList<Category> categoriesList;
 
     public static final int ADD_BOOK_REQUEST_CODE = 1;
     public static final int EDIT_BOOK_REQUEST_CODE = 2;
@@ -53,64 +52,77 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        ((App) getApplication()).getApplicationComponent().inject(this);
+//        ((App) getApplication()).getApplicationComponent().inject(this);
 
 
-        mainActivityViewModel= ViewModelProviders.of(this).get(MainActivityViewModel.class);
+        mainActivityViewModel = ViewModelProviders.of(this).get(MainActivityViewModel.class);
 
-        activityMainBinding = DataBindingUtil.setContentView(this,R.layout.activity_main);
+        activityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main);
         clickHandler = new ClickHandler(this);
         activityMainBinding.setClickHandler(clickHandler);
-        initSpinner();
 
-        initList();
-
-
-
-
-     /*   FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        mainActivityViewModel.getAllCategories().observe(this, new Observer<List<Category>>() {
             @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-             //   bookStoreRepository.codeToTriggerOnCreate();
-            }
-        });*/
-    }
+            public void onChanged(@Nullable List<Category> categories) {
 
-    private void initList() {
+                categoriesList = (ArrayList<Category>) categories;
 
-        mainActivityViewModel.getBooks(1).observe(this, new Observer<List<Book>>() {
-            @Override
-            public void onChanged(@Nullable List<Book> bookList) {
-                books = (ArrayList<Book>) bookList;
-                loadRecyclerView();
+                initSpinner();
             }
         });
+
+
+
+
     }
 
-    private void loadRecyclerView() {
+    private void loadRecyclerView(List<Book> bookList) {
 
         recyclerView = activityMainBinding.secondaryLayout.rvBooks;
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setHasFixedSize(true);
         booksAdapter = new BooksAdapter();
+        booksAdapter.setBooks(bookList);
         recyclerView.setAdapter(booksAdapter);
 
-        booksAdapter.setBooks(books);
 
+        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder viewHolder1) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
+                Book bookToDelete = books.get(viewHolder.getAdapterPosition());
+                mainActivityViewModel.deleteBook(bookToDelete);
+            }
+        }).attachToRecyclerView(recyclerView);
+
+
+        booksAdapter.setListener(new BooksAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(Book book) {
+                selectedBookId = book.getBookId();
+
+                Intent intent = new Intent(MainActivity.this, BookActivity.class);
+                intent.putExtra(BookActivity.BOOK_ID, selectedBookId);
+                intent.putExtra(BookActivity.BOOK_NAME, book.getName());
+                intent.putExtra(BookActivity.UNIT_PRICE, book.getPrice());
+                startActivityForResult(intent, EDIT_BOOK_REQUEST_CODE);
+            }
+        });
     }
 
 
-    private void initSpinner(){
-        List<Category> categories = mainActivityViewModel.getCategories();//bookStoreRepository.getCategories();
+    private void initSpinner() {
+    /* Without using live data
+       List<Category> categories = mainActivityViewModel.getCategories();*/
+
         categoryArrayAdapter = new ArrayAdapter<Category>(this, android.R.layout.simple_spinner_dropdown_item,
-                categories);
+                categoriesList);
         categoryArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         activityMainBinding.setSpinnerAdapter(categoryArrayAdapter);
-
-
     }
 
     @Override
@@ -135,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public class ClickHandler{
+    public class ClickHandler {
 
         private Context context;
 
@@ -143,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
             this.context = context;
         }
 
-        public void onAddButtonClick(View view){
+        public void onAddButtonClick(View view) {
             Intent intent = new Intent(MainActivity.this, BookActivity.class);
             startActivityForResult(intent, ADD_BOOK_REQUEST_CODE);
 
@@ -151,14 +163,48 @@ public class MainActivity extends AppCompatActivity {
 
         public void onSelectItem(AdapterView<?> parent, View view, int pos, long id) {
 
-           /* selectedCategory = (Category) parent.getItemAtPosition(pos);
-
-            String message = " id is " + selectedCategory.getId() + "\n name is " + selectedCategory.getCategoryName() + "\n email is " + selectedCategory.getCategoryDescription();
-
-            loadBooksArrayList(selectedCategory.getId());*/
+             selectedCategory = (Category) parent.getItemAtPosition(pos);
+            loadBooksArrayList(selectedCategory.getId());
         }
+    }
+
+    private void loadBooksArrayList(int categoryID) {
+
+        mainActivityViewModel.getBooks(categoryID).observe(this, new Observer<List<Book>>() {
+            @Override
+            public void onChanged(@Nullable List<Book> bookList) {
+                books = (ArrayList<Book>) bookList;
+                loadRecyclerView(books);
+            }
+        });
+    }
 
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
 
+        int selectedCategoryId = selectedCategory.getId();
+        if (requestCode == ADD_BOOK_REQUEST_CODE && resultCode == RESULT_OK) {
+
+            Book book = new Book();
+            book.setCategoryId(selectedCategoryId);
+            book.setName(data.getStringExtra(BookActivity.BOOK_NAME));
+            book.setPrice(data.getStringExtra(BookActivity.UNIT_PRICE));
+            mainActivityViewModel.addBook(book);
+
+
+        } else if (requestCode == EDIT_BOOK_REQUEST_CODE && resultCode == RESULT_OK) {
+
+            Book book = new Book();
+            book.setCategoryId(selectedCategoryId);
+            book.setName(data.getStringExtra(BookActivity.BOOK_NAME));
+            book.setPrice(data.getStringExtra(BookActivity.UNIT_PRICE));
+
+            book.setBookId(selectedBookId);
+            mainActivityViewModel.updateBook(book);
+
+
+        }
     }
 }
